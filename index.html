@@ -432,9 +432,7 @@ enterBtn.addEventListener('click',()=>{
   enterBtn.textContent = 'TRANSMITTING...';
   enterBtn.disabled = true;
   setTimeout(()=>{
-    alert('→ In your real site: window.location.href = "portfolio.html"');
-    enterBtn.innerHTML = 'ENTER PORTFOLIO<span class="sub">— your drawing will be added to the community canvas —</span>';
-    enterBtn.disabled = false;
+    window.location.href = "community.html";
   }, 1200);
 });
 </script>
