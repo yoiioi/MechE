@@ -1,1 +1,440 @@
 
+<!DOCTYPE html>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=DM+Sans:wght@300;400&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  background:#0a0a0a;
+  color:#f0ece4;
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  position:relative;
+}
+
+/* Engineering grid background */
+.grid-bg{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(200,30,30,0.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(200,30,30,0.06) 1px,transparent 1px),
+    linear-gradient(rgba(200,30,30,0.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(200,30,30,0.025) 1px,transparent 1px);
+  background-size:60px 60px,60px 60px,12px 12px,12px 12px;
+}
+
+/* Corner brackets */
+.bracket{position:fixed;width:40px;height:40px;pointer-events:none;z-index:1}
+.bracket.tl{top:24px;left:24px;border-top:1.5px solid #c81e1e;border-left:1.5px solid #c81e1e}
+.bracket.tr{top:24px;right:24px;border-top:1.5px solid #c81e1e;border-right:1.5px solid #c81e1e}
+.bracket.bl{bottom:24px;left:24px;border-bottom:1.5px solid #c81e1e;border-left:1.5px solid #c81e1e}
+.bracket.br{bottom:24px;right:24px;border-bottom:1.5px solid #c81e1e;border-right:1.5px solid #c81e1e}
+
+/* Scanning line */
+@keyframes scan{0%{top:-2px}100%{top:100%}}
+.scan-line{
+  position:fixed;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(200,30,30,0.18),transparent);
+  animation:scan 6s linear infinite;pointer-events:none;z-index:1;
+}
+
+.container{
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;align-items:center;
+  gap:0;width:100%;max-width:660px;padding:0 16px;
+}
+
+.header{
+  width:100%;display:flex;align-items:baseline;
+  justify-content:space-between;margin-bottom:10px;
+}
+
+.title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(28px,5vw,42px);
+  letter-spacing:0.08em;
+  color:#f0ece4;
+  line-height:1;
+}
+.title span{color:#c81e1e}
+
+.meta{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;color:rgba(200,30,30,0.6);
+  letter-spacing:0.12em;text-transform:uppercase;
+}
+
+.prompt{
+  width:100%;
+  font-size:12px;color:rgba(240,236,228,0.45);
+  letter-spacing:0.06em;margin-bottom:10px;
+  font-family:'Share Tech Mono',monospace;
+  display:flex;align-items:center;gap:8px;
+}
+.prompt::before{content:'>';color:#c81e1e;font-size:11px}
+
+/* Canvas wrapper */
+.canvas-wrap{
+  position:relative;width:100%;
+  border:1px solid rgba(200,30,30,0.35);
+  background:#0f0f0f;
+  cursor:crosshair;
+}
+
+canvas{display:block;width:100%;touch-action:none}
+
+/* Corner coords */
+.coord{
+  position:absolute;font-family:'Share Tech Mono',monospace;
+  font-size:9px;color:rgba(200,30,30,0.4);
+  pointer-events:none;
+}
+.coord.tl{top:6px;left:8px}
+.coord.br{bottom:6px;right:8px}
+
+/* Live cursor coords */
+.cursor-readout{
+  position:absolute;
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;color:rgba(200,30,30,0.55);
+  pointer-events:none;
+  transition:opacity .15s;
+  white-space:nowrap;
+}
+
+/* Toolbar */
+.toolbar{
+  width:100%;display:flex;align-items:center;
+  gap:8px;margin-top:10px;flex-wrap:wrap;
+}
+
+.tool-section{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 10px;
+  border:1px solid rgba(200,30,30,0.2);
+  background:rgba(200,30,30,0.04);
+}
+
+.tool-label{
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;color:rgba(200,30,30,0.5);
+  letter-spacing:0.1em;text-transform:uppercase;
+  margin-right:2px;
+}
+
+/* Color swatches */
+.swatch{
+  width:18px;height:18px;border:1px solid rgba(255,255,255,0.1);
+  cursor:pointer;transition:transform .1s,border-color .1s;
+  flex-shrink:0;
+}
+.swatch:hover{transform:scale(1.15)}
+.swatch.active{border-color:#c81e1e;border-width:2px}
+
+/* Brush size dots */
+.size-btn{
+  background:none;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  padding:3px;
+}
+.size-btn span{
+  background:#f0ece4;border-radius:50%;display:block;
+  transition:background .1s;
+}
+.size-btn:hover span,.size-btn.active span{background:#c81e1e}
+
+/* Icon buttons */
+.icon-btn{
+  background:none;border:1px solid rgba(200,30,30,0.2);
+  color:rgba(240,236,228,0.55);
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;letter-spacing:0.08em;
+  padding:5px 9px;cursor:pointer;
+  transition:all .15s;text-transform:uppercase;
+}
+.icon-btn:hover{
+  border-color:rgba(200,30,30,0.6);
+  color:#f0ece4;background:rgba(200,30,30,0.08);
+}
+
+/* Eraser active state */
+.icon-btn.active{
+  border-color:#c81e1e;color:#c81e1e;
+  background:rgba(200,30,30,0.1);
+}
+
+/* Enter button */
+.enter-btn{
+  margin-top:14px;
+  width:100%;
+  padding:14px;
+  background:#c81e1e;
+  border:none;color:#f0ece4;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:22px;letter-spacing:0.2em;
+  cursor:pointer;
+  position:relative;overflow:hidden;
+  transition:background .2s;
+}
+.enter-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.07) 50%,transparent 100%);
+  transform:translateX(-100%);
+  transition:transform .4s ease;
+}
+.enter-btn:hover{background:#a01818}
+.enter-btn:hover::after{transform:translateX(100%)}
+.enter-btn:disabled{background:#3a1010;color:rgba(240,236,228,0.3);cursor:not-allowed}
+
+.enter-btn .sub{
+  display:block;font-family:'Share Tech Mono',monospace;
+  font-size:9px;letter-spacing:0.15em;
+  color:rgba(240,236,228,0.55);margin-top:2px;
+  font-weight:400;
+}
+
+/* Stroke count badge */
+.stroke-counter{
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;color:rgba(200,30,30,0.45);
+  margin-left:auto;letter-spacing:0.1em;
+}
+
+/* Flash animation on enter */
+@keyframes flash{0%{opacity:1}50%{opacity:0}100%{opacity:1}}
+.flash{animation:flash 0.12s ease 2}
+</style>
+
+<div class="grid-bg"></div>
+<div class="scan-line"></div>
+<div class="bracket tl"></div>
+<div class="bracket tr"></div>
+<div class="bracket bl"></div>
+<div class="bracket br"></div>
+
+<div class="container">
+  <div class="header">
+    <div class="title">LEAVE YOUR <span>MARK</span></div>
+    <div class="meta">VISITOR_INPUT.exe</div>
+  </div>
+
+  <div class="prompt">Draw anything — a symbol, a face, a shape. It will live on my site.</div>
+
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="drawCanvas"></canvas>
+    <div class="coord tl">x:000 y:000</div>
+    <div class="coord br" id="dimLabel"></div>
+    <div class="cursor-readout" id="cursorReadout" style="opacity:0"></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="tool-section">
+      <span class="tool-label">Color</span>
+      <div class="swatch active" style="background:#f0ece4" data-color="#f0ece4"></div>
+      <div class="swatch" style="background:#c81e1e" data-color="#c81e1e"></div>
+      <div class="swatch" style="background:#e85d3a" data-color="#e85d3a"></div>
+      <div class="swatch" style="background:#6b6b6b" data-color="#6b6b6b"></div>
+      <div class="swatch" style="background:#2a6fa8" data-color="#2a6fa8"></div>
+      <div class="swatch" style="background:#3a8a4e" data-color="#3a8a4e"></div>
+    </div>
+
+    <div class="tool-section">
+      <span class="tool-label">Size</span>
+      <button class="size-btn active" data-size="2"><span style="width:6px;height:6px"></span></button>
+      <button class="size-btn" data-size="5"><span style="width:10px;height:10px"></span></button>
+      <button class="size-btn" data-size="10"><span style="width:16px;height:16px"></span></button>
+      <button class="size-btn" data-size="20"><span style="width:22px;height:22px"></span></button>
+    </div>
+
+    <div class="tool-section">
+      <button class="icon-btn" id="eraserBtn">Eraser</button>
+      <button class="icon-btn" id="undoBtn">Undo</button>
+      <button class="icon-btn" id="clearBtn">Clear</button>
+    </div>
+
+    <div class="stroke-counter" id="strokeCounter">STROKES: 0</div>
+  </div>
+
+  <button class="enter-btn" id="enterBtn" disabled>
+    ENTER PORTFOLIO
+    <span class="sub">— your drawing will be added to the community canvas —</span>
+  </button>
+</div>
+
+<script>
+const canvas = document.getElementById('drawCanvas');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvasWrap');
+const dimLabel = document.getElementById('dimLabel');
+const cursorReadout = document.getElementById('cursorReadout');
+const enterBtn = document.getElementById('enterBtn');
+const strokeCounter = document.getElementById('strokeCounter');
+
+let painting = false;
+let currentColor = '#f0ece4';
+let brushSize = 2;
+let erasing = false;
+let history = [];
+let strokeCount = 0;
+let hasDrawn = false;
+
+function resizeCanvas(){
+  const W = wrap.clientWidth;
+  const H = Math.round(W * 0.52);
+  const ratio = window.devicePixelRatio || 1;
+  const saved = ctx.getImageData(0,0,canvas.width,canvas.height);
+  canvas.width = W * ratio;
+  canvas.height = H * ratio;
+  canvas.style.height = H + 'px';
+  ctx.scale(ratio,ratio);
+  ctx.fillStyle = '#0f0f0f';
+  ctx.fillRect(0,0,W,H);
+  ctx.putImageData(saved,0,0);
+  dimLabel.textContent = W + 'x' + H;
+}
+
+resizeCanvas();
+window.addEventListener('resize',resizeCanvas);
+
+function saveState(){
+  history.push(canvas.toDataURL());
+  if(history.length > 30) history.shift();
+}
+
+function getPos(e){
+  const r = canvas.getBoundingClientRect();
+  const src = e.touches ? e.touches[0] : e;
+  const scaleX = canvas.width / (window.devicePixelRatio||1) / r.width;
+  const scaleY = canvas.height / (window.devicePixelRatio||1) / r.height;
+  return{
+    x: (src.clientX - r.left) * scaleX,
+    y: (src.clientY - r.top) * scaleY
+  };
+}
+
+function startPaint(e){
+  e.preventDefault();
+  saveState();
+  painting = true;
+  const p = getPos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x,p.y);
+}
+
+function doPaint(e){
+  e.preventDefault();
+  const p = getPos(e);
+  cursorReadout.style.opacity = '1';
+  cursorReadout.style.left = (p.x + 10) + 'px';
+  cursorReadout.style.top = (p.y - 18) + 'px';
+  cursorReadout.textContent = 'x:' + Math.round(p.x) + ' y:' + Math.round(p.y);
+
+  if(!painting) return;
+  ctx.lineWidth = erasing ? brushSize * 4 : brushSize;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = erasing ? '#0f0f0f' : currentColor;
+  ctx.globalCompositeOperation = erasing ? 'destination-out' : 'source-over';
+  ctx.lineTo(p.x,p.y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(p.x,p.y);
+}
+
+function endPaint(e){
+  if(!painting) return;
+  painting = false;
+  ctx.globalCompositeOperation = 'source-over';
+  strokeCount++;
+  strokeCounter.textContent = 'STROKES: ' + strokeCount;
+  if(!hasDrawn){
+    hasDrawn = true;
+    enterBtn.disabled = false;
+    enterBtn.classList.add('flash');
+  }
+}
+
+canvas.addEventListener('mousedown', startPaint);
+canvas.addEventListener('mousemove', doPaint);
+canvas.addEventListener('mouseup', endPaint);
+canvas.addEventListener('mouseleave', e => {
+  endPaint(e);
+  cursorReadout.style.opacity = '0';
+});
+canvas.addEventListener('touchstart', startPaint, {passive:false});
+canvas.addEventListener('touchmove', doPaint, {passive:false});
+canvas.addEventListener('touchend', endPaint);
+
+// Swatches
+document.querySelectorAll('.swatch').forEach(s=>{
+  s.addEventListener('click',()=>{
+    document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('active'));
+    s.classList.add('active');
+    currentColor = s.dataset.color;
+    erasing = false;
+    document.getElementById('eraserBtn').classList.remove('active');
+  });
+});
+
+// Sizes
+document.querySelectorAll('.size-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.size-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    brushSize = parseInt(b.dataset.size);
+  });
+});
+
+// Eraser
+document.getElementById('eraserBtn').addEventListener('click', function(){
+  erasing = !erasing;
+  this.classList.toggle('active', erasing);
+});
+
+// Undo
+document.getElementById('undoBtn').addEventListener('click',()=>{
+  if(!history.length) return;
+  const img = new Image();
+  img.src = history.pop();
+  img.onload = ()=>{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#0f0f0f';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+  };
+  if(strokeCount>0) strokeCount--;
+  strokeCounter.textContent='STROKES: '+strokeCount;
+});
+
+// Clear
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  saveState();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#0f0f0f';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  strokeCount=0;
+  strokeCounter.textContent='STROKES: 0';
+  hasDrawn=false;
+  enterBtn.disabled=true;
+});
+
+// Enter
+enterBtn.addEventListener('click',()=>{
+  if(enterBtn.disabled) return;
+  const dataURL = canvas.toDataURL('image/png');
+  sessionStorage.setItem('visitor_drawing', dataURL);
+  enterBtn.textContent = 'TRANSMITTING...';
+  enterBtn.disabled = true;
+  setTimeout(()=>{
+    alert('→ In your real site: window.location.href = "portfolio.html"');
+    enterBtn.innerHTML = 'ENTER PORTFOLIO<span class="sub">— your drawing will be added to the community canvas —</span>';
+    enterBtn.disabled = false;
+  }, 1200);
+});
+</script>
