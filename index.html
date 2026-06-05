@@ -425,14 +425,48 @@ document.getElementById('clearBtn').addEventListener('click',()=>{
 });
 
 // Enter
-enterBtn.addEventListener('click',()=>{
-  if(enterBtn.disabled) return;
-  const dataURL = canvas.toDataURL('image/png');
-  sessionStorage.setItem('visitor_drawing', dataURL);
-  enterBtn.textContent = 'TRANSMITTING...';
-  enterBtn.disabled = true;
-  setTimeout(()=>{
-    window.location.href = "community.html";
-  }, 1200);
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+
+  const firebaseConfig = { 
+    apiKey : "AIzaSyA_KEQSkOOZfNrIEcO6TtwofNKTGdpU8es" , 
+    authDomain : "katherinemeportfolio.firebaseapp.com" , 
+    projectId : "katherinemeportfolio" , 
+    storageBucket : "katherinemeportfolio.firebasestorage.app" , 
+    messagingSenderId : "141142504783" , 
+    appId : "1:141142504783:web:b6a8024cdb02d70706013a" , 
+    measurementId : "G-N2S9FWKK24" 
+  };
+
+
+  const app = initializeApp(firebaseConfig);
+  const storage = getStorage(app);
+
+  enterBtn.addEventListener('click', async () => {
+    if (enterBtn.disabled) return;
+
+    const dataURL = canvas.toDataURL('image/png');
+
+    enterBtn.textContent = 'TRANSMITTING...';
+    enterBtn.disabled = true;
+
+    try {
+      const fileName = `community-drawings/${Date.now()}-${Math.random().toString(36).slice(2)}.png`;
+      const drawingRef = ref(storage, fileName);
+
+      await uploadString(drawingRef, dataURL, 'data_url');
+
+      const downloadURL = await getDownloadURL(drawingRef);
+      localStorage.setItem('visitor_drawing_url', downloadURL);
+
+      window.location.href = "community.html";
+    } catch (error) {
+      console.error(error);
+      alert("Upload failed. Please try again.");
+      enterBtn.innerHTML = 'ENTER PORTFOLIO<span class="sub">— your drawing will be added to the community canvas —</span>';
+      enterBtn.disabled = false;
+    }
+  });
 });
 </script>
